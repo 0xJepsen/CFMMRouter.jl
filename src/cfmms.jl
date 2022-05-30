@@ -1,6 +1,6 @@
 export CFMM, ProductTwoCoin, GeometricMeanTwoCoin
 export find_arb!
-
+using Distributions
 abstract type CFMM{T} end
 
 @def add_generic_fields begin
@@ -62,6 +62,13 @@ struct GeometricMean{T} <: CFMM{T}
     w::Vector{T}
 end
 
+struct Primitive{T} <: CFMM{T}
+    @add_generic_fields
+    σ::T
+    Τ::T
+    K::T
+end
+
 struct Curve{T} <: CFMM{T}
     @add_generic_fields
     α::T
@@ -118,20 +125,20 @@ function ∇ϕ!(R⁺, cfmm::ProductTwoCoin; R=nothing)
 end
 
 # See App. A of "An Analysis of Uniswap Markets"
-@inline prod_arb_δ(m, r, k, γ) = max(sqrt(γ*m*k) - r, 0)/γ
-@inline prod_arb_λ(m, r, k, γ) = max(r - sqrt(k/(m*γ)), 0)
+@inline prod_arb_δ(m, r, k, γ) = max(sqrt(γ * m * k) - r, 0) / γ
+@inline prod_arb_λ(m, r, k, γ) = max(r - sqrt(k / (m * γ)), 0)
 
 # Solves the maximum arbitrage problem for the two-coin constant product case.
 # Assumes that v > 0 and γ > 0.
-function find_arb!(Δ::VT, Λ::VT, cfmm::ProductTwoCoin{T}, v::VT) where {T, VT<:AbstractVector{T}}
+function find_arb!(Δ::VT, Λ::VT, cfmm::ProductTwoCoin{T}, v::VT) where {T,VT<:AbstractVector{T}}
     R, γ = cfmm.R, cfmm.γ
-    k = R[1]*R[2]
+    k = R[1] * R[2]
 
-    Δ[1] = prod_arb_δ(v[2]/v[1], R[1], k, γ)
-    Δ[2] = prod_arb_δ(v[1]/v[2], R[2], k, γ)
+    Δ[1] = prod_arb_δ(v[2] / v[1], R[1], k, γ)
+    Δ[2] = prod_arb_δ(v[1] / v[2], R[2], k, γ)
 
-    Λ[1] = prod_arb_λ(v[1]/v[2], R[1], k, γ)
-    Λ[2] = prod_arb_λ(v[2]/v[1], R[2], k, γ)
+    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], k, γ)
+    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], k, γ)
     return nothing
 end
 
@@ -150,7 +157,7 @@ struct GeometricMeanTwoCoin{T} <: CFMM{T}
     w::SVector{2,T}
     function GeometricMeanTwoCoin(R, w, γ, idx)
         γ_T, idx_uint, T = two_coin_check_cast(R, γ, idx)
-    
+
         return new{T}(
             MVector{2,T}(R),
             γ_T,
@@ -168,25 +175,63 @@ end
 function ∇ϕ!(R⁺, cfmm::GeometricMeanTwoCoin; R=nothing)
     R = isnothing(R) ? cfmm.R : R
     w = cfmm.w
-    R⁺[1] = w[1] * (R[2]/R[1])^w[2]
-    R⁺[2] = w[2] * (R[1]/R[2])^w[1]
+    R⁺[1] = w[1] * (R[2] / R[1])^w[2]
+    R⁺[2] = w[2] * (R[1] / R[2])^w[1]
     return nothing
 end
 
-@inline geom_arb_δ(m, r1, r2, η, γ) = max((γ*m*η*r1*r2^η)^(1/(η+1)) - r2, 0)/γ
-@inline geom_arb_λ(m, r1, r2, η, γ) = max(r1 - ((r2*r1^(1/η))/(η*γ*m))^(η/(1+η)), 0)
+@inline geom_arb_δ(m, r1, r2, η, γ) = max((γ * m * η * r1 * r2^η)^(1 / (η + 1)) - r2, 0) / γ
+@inline geom_arb_λ(m, r1, r2, η, γ) = max(r1 - ((r2 * r1^(1 / η)) / (η * γ * m))^(η / (1 + η)), 0)
 
 # Solves the maximum arbitrage problem for the two-coin geometric mean case.
 # Assumes that v > 0 and w > 0.
-function find_arb!(Δ::VT, Λ::VT, cfmm::GeometricMeanTwoCoin{T}, v::VT) where {T, VT<:AbstractVector{T}}
+function find_arb!(Δ::VT, Λ::VT, cfmm::GeometricMeanTwoCoin{T}, v::VT) where {T,VT<:AbstractVector{T}}
     R, γ, w = cfmm.R, cfmm.γ, cfmm.w
 
-    η = w[1]/w[2]
+    η = w[1] / w[2]
 
-    Δ[1] = geom_arb_δ(v[2]/v[1], R[2], R[1], η, γ)
-    Δ[2] = geom_arb_δ(v[1]/v[2], R[1], R[2], 1/η, γ)
+    Δ[1] = geom_arb_δ(v[2] / v[1], R[2], R[1], η, γ)
+    Δ[2] = geom_arb_δ(v[1] / v[2], R[1], R[2], 1 / η, γ)
 
-    Λ[1] = geom_arb_λ(v[1]/v[2], R[1], R[2], 1/η, γ)
-    Λ[2] = geom_arb_λ(v[2]/v[1], R[2], R[1], η, γ)
+    Λ[1] = geom_arb_λ(v[1] / v[2], R[1], R[2], 1 / η, γ)
+    Λ[2] = geom_arb_λ(v[2] / v[1], R[2], R[1], η, γ)
+    return nothing
+end
+
+@doc raw"""
+    Primitive_RMM_01(R, γ, idx)
+
+Creates a two coin RMM-01 with coins `idx[1]` and `idx[2]`, reserves `R`,
+and fee `γ`. Specifically, the invariant is
+```math
+\varphi(R_x,R_y) = R_y-K\Phi(\Phi^{-1}(1-R_x)-\sigma\sqrt{\tau}
+```
+where \Phi is the normal CDF
+"""
+struct Primitive_RMM_01{T} <: CFMM{T}
+    @add_two_coin_fields
+    function Primitive_RMM_01(R, γ, idx, σ, Τ, K)
+        γ_T, idx_uint, T = two_coin_check_cast(R, γ, idx)
+        return new{T}(
+            MVector{2,T}(R),
+            γ_T,
+            MVector{2,UInt}(idx_uint),
+            σ,
+            Τ,
+            K
+        )
+    end
+end
+
+function ϕ(cfmm::Primitive; R=nothing)
+    R = isnothing(R) ? cfmm.R : R
+    return R[2] - cfmm.K * Distributions.CDF(Distributions.quantile(1 - R[1]) - cfmm.σ * Base.Math.sqrt(cfmm.Τ))
+end
+
+function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
+    ## TODO
+    R = isnothing(R) ? cfmm.R : R
+    R⁺[1] = R[2]
+    R⁺[2] = R[1]
     return nothing
 end
