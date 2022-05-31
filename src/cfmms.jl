@@ -236,8 +236,9 @@ function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
 end
 
 # Can we use this?
-@inline prod_arb_δ(m, r, k, γ) = max(sqrt(γ * m * k) - r, 0) / γ
-@inline prod_arb_λ(m, r, k, γ) = max(r - sqrt(k / (m * γ)), 0)
+@inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - CDF(log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
+@inline prod_arb_λ(m, r, K, k, γ, σ, τ) = max(K * quantile((log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + k - r, 0) / γ
+
 
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive{T}, v::VT) where {T,VT<:AbstractVector{T}}
     R, γ = cfmm.R, cfmm.γ
