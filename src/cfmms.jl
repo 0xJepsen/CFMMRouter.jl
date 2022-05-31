@@ -229,9 +229,8 @@ function ϕ(cfmm::Primitive; R=nothing)
 end
 
 function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
-    ## TODO
     R = isnothing(R) ? cfmm.R : R
-    R⁺[1] = R[2]
-    R⁺[2] = R[1]
+    Base.Math.R⁺[1] = cfmm.K * Base.Math.exp(Distributions.quantile(1 - R[1]) * cfmm.σ * Base.Math.sqrt(cfmm.Τ) * Base.Math.exp(-0.5 * cfmm.σ^2 * cfmm.T))
+    R⁺[2] = 1
     return nothing
 end
