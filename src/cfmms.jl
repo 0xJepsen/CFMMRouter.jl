@@ -225,12 +225,26 @@ end
 
 function ϕ(cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    return R[2] - cfmm.K * Distributions.CDF(Distributions.quantile(1 - R[1]) - cfmm.σ * Base.Math.sqrt(cfmm.Τ))
+    return R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.Τ))
 end
 
 function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    Base.Math.R⁺[1] = cfmm.K * Base.Math.exp(Distributions.quantile(1 - R[1]) * cfmm.σ * Base.Math.sqrt(cfmm.Τ) * Base.Math.exp(-0.5 * cfmm.σ^2 * cfmm.T))
+    Base.Math.R⁺[1] = cfmm.K * exp(quantile(1 - R[1]) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
     R⁺[2] = 1
+    return nothing
+end
+
+# Can we use this?
+@inline prod_arb_δ(m, r, k, γ) = max(sqrt(γ * m * k) - r, 0) / γ
+@inline prod_arb_λ(m, r, k, γ) = max(r - sqrt(k / (m * γ)), 0)
+
+function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive{T}, v::VT) where {T,VT<:AbstractVector{T}}
+    R, γ = cfmm.R, cfmm.γ
+    k = R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.Τ))
+    Δ[1] = prod_arb_δ(v[2] / v[1], R[1], k, γ)
+    Δ[2] = prod_arb_δ(v[1] / v[2], R[2], k, γ)
+    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], k, γ)
+    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], k, γ)
     return nothing
 end
