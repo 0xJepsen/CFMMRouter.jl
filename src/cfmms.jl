@@ -217,7 +217,7 @@ struct Primitive_RMM_01{T} <: CFMM{T}
             γ_T,
             MVector{2,UInt}(idx_uint),
             σ,
-            Τ,
+            τ,
             K
         )
     end
@@ -225,27 +225,30 @@ end
 
 function ϕ(cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    return R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.Τ))
+    return R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.T))
 end
 
+# Derivative with respect to risky is interesting
+# Derivative with respect to stable is just 1
 function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    Base.Math.R⁺[1] = cfmm.K * exp(quantile(1 - R[1]) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
+    R⁺[1] = cfmm.K * exp(quantile(1 - R[1]) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
     R⁺[2] = 1
     return nothing
 end
 
-# Can we use this?
+# Double check This
+# notes are here https://www.overleaf.com/read/gtvfvwnbfmmy
 @inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - CDF(log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
 @inline prod_arb_λ(m, r, K, k, γ, σ, τ) = max(K * quantile((log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + k - r, 0) / γ
 
 
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive{T}, v::VT) where {T,VT<:AbstractVector{T}}
-    R, γ = cfmm.R, cfmm.γ
+    K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.T
     k = R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.Τ))
-    Δ[1] = prod_arb_δ(v[2] / v[1], R[1], k, γ)
-    Δ[2] = prod_arb_δ(v[1] / v[2], R[2], k, γ)
-    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], k, γ)
-    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], k, γ)
+    Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
+    Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
+    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, k, γ, σ, τ)
+    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], K, k, γ, σ, τ)
     return nothing
 end
