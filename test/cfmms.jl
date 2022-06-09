@@ -1,4 +1,4 @@
-init_opt_cache(R) = (R⁺=similar(R), ∇ϕR = similar(R))
+init_opt_cache(R) = (R⁺=similar(R), ∇ϕR=similar(R))
 
 function optimality_conditions_met(c, Δ, Λ, cfmm; cache=nothing)
     R, γ = cfmm.R, cfmm.γ
@@ -21,55 +21,65 @@ function optimality_conditions_met(c, Δ, Λ, cfmm; cache=nothing)
     return pfeas && cfmm_sat && opt
 end
 @testset "CFMMs" begin
-@testset "arbitrage checks: two coins" begin
-    Δ = MVector{2, Float64}(undef)
-    Λ = MVector{2, Float64}(undef)
-    
-    n = 3
-    Random.seed!(1234)
-    γs = [rand() for i in 1:n]
-    Rs = [rand(2)*10 for i in 1:n]
-    νs = [@MVector rand(2) for i in 1:n]
-    cache = init_opt_cache(Rs[1])
+    @testset "arbitrage checks: two coins" begin
+        Δ = MVector{2,Float64}(undef)
+        Λ = MVector{2,Float64}(undef)
 
-    @testset "product" begin
-        equal_pool = ProductTwoCoin([1, 1], 1, [1, 2])
+        n = 3
+        Random.seed!(1234)
+        γs = [rand() for i in 1:n]
+        Rs = [rand(2) * 10 for i in 1:n]
+        νs = [@MVector rand(2) for i in 1:n]
+        σs = [rand(Truncated(Normal(0.95, 0.35), 0.5, 1.4)) for i in 1:n] # Standard deviation of price. Range gausian between [.6,1.3]
+        Ks = [rand(Truncated(Normal(i, j), 0, Inf)) for i in νs, j in σs] # near price vector
+        τs = [((1 / 52) - (i - 1) * (1 / 154)) for i in 1:n] # max is 1/52 (week at most). Start max, reduce by step size
+        cache = init_opt_cache(Rs[1])
 
-        # No arb in the fee-less case
-        v = MVector(1.0, 1.0)
-        find_arb!(Δ, Λ, equal_pool, v)
-        @test iszero(Δ) && iszero(Λ)
+        @testset "product" begin
+            equal_pool = ProductTwoCoin([1, 1], 1, [1, 2])
 
-        v .*= 2
-        find_arb!(Δ, Λ, equal_pool, v)
-        @test iszero(Δ) && iszero(Λ)
+            # No arb in the fee-less case
+            v = MVector(1.0, 1.0)
+            find_arb!(Δ, Λ, equal_pool, v)
+            @test iszero(Δ) && iszero(Λ)
 
-        # Easy arb in the fee-less case
-        v[2] = 1
-        find_arb!(Δ, Λ, equal_pool, v)
-        @test Δ[1] ≈ 0 && Δ[2] ≈ sqrt(2) - 1
-        @test Λ[1] ≈ 1 - sqrt(1/2) && Λ[2] ≈ 0
+            v .*= 2
+            find_arb!(Δ, Λ, equal_pool, v)
+            @test iszero(Δ) && iszero(Λ)
 
-        # No-arb in the fee case
-        @test length(ProductTwoCoin([1, 1], .9, [1, 2])) == 2
-        @test_throws ArgumentError ProductTwoCoin([1, 1], .9, [1])
+            # Easy arb in the fee-less case
+            v[2] = 1
+            find_arb!(Δ, Λ, equal_pool, v)
+            @test Δ[1] ≈ 0 && Δ[2] ≈ sqrt(2) - 1
+            @test Λ[1] ≈ 1 - sqrt(1 / 2) && Λ[2] ≈ 0
 
-        for R in Rs, γ in γs, ν in νs
-            cfmm = ProductTwoCoin(R, γ, [1, 2])
-            find_arb!(Δ, Λ, cfmm, ν)
-            @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
+            # No-arb in the fee case
+            @test length(ProductTwoCoin([1, 1], 0.9, [1, 2])) == 2
+            @test_throws ArgumentError ProductTwoCoin([1, 1], 0.9, [1])
+
+            for R in Rs, γ in γs, ν in νs
+                cfmm = ProductTwoCoin(R, γ, [1, 2])
+                find_arb!(Δ, Λ, cfmm, ν)
+                @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
+            end
+
         end
 
-    end
-
-    @testset "geo mean" begin
-        ws = [(w1=rand(); [w1; 1-w1]) for _ in 1:n]
-        for R in Rs, γ in γs, ν in νs, w in ws
-            cfmm = GeometricMeanTwoCoin(R, w, γ, [1, 2])
-            find_arb!(Δ, Λ, cfmm, ν)
-            @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
+        @testset "geo mean" begin
+            ws = [(w1 = rand(); [w1; 1 - w1]) for _ in 1:n]
+            for R in Rs, γ in γs, ν in νs, w in ws
+                cfmm = GeometricMeanTwoCoin(R, w, γ, [1, 2])
+                find_arb!(Δ, Λ, cfmm, ν)
+                @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
+            end
+        end
+        @testset "Primitive_RMM_01" begin
+            for R in Rs, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
+                cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
+                find_arb!(Δ, Λ, cfmm, ν)
+                @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
+            end
         end
     end
-end
 
 end

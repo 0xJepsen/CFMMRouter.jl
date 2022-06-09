@@ -210,7 +210,7 @@ where \Phi is the normal CDF
 """
 struct Primitive_RMM_01{T} <: CFMM{T}
     @add_two_coin_fields
-    function Primitive_RMM_01(R, γ, idx, σ, Τ, K)
+    function Primitive_RMM_01(R, γ, idx, σ, τ, K)
         γ_T, idx_uint, T = two_coin_check_cast(R, γ, idx)
         return new{T}(
             MVector{2,T}(R),
@@ -234,6 +234,7 @@ function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
     R⁺[1] = cfmm.K * exp(quantile(1 - R[1]) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
     R⁺[2] = 1
+    # Gradient is a vector of derivatives, since we have two coins our vector has two dimensions
     return nothing
 end
 
