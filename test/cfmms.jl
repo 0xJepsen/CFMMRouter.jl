@@ -81,8 +81,11 @@ end
             end
         end
         @testset "Primitive RMM_01" begin
+            println("Entered the Primitive Test")
             for R in Rs, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
+                println("Entered the Primitive Test for loop")
                 cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
+                println("defined Primitive")
                 find_arb!(Δ, Λ, cfmm, ν)
                 @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
             end
