@@ -1,7 +1,6 @@
 export CFMM, ProductTwoCoin, GeometricMeanTwoCoin
 export find_arb!
 using Distributions
-using Test
 
 abstract type CFMM{T} end
 

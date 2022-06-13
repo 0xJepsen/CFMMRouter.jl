@@ -1,5 +1,5 @@
 init_opt_cache(R) = (R⁺=similar(R), ∇ϕR=similar(R))
-
+using Distributions
 function optimality_conditions_met(c, Δ, Λ, cfmm; cache=nothing)
     R, γ = cfmm.R, cfmm.γ
     if isnothing(cache)
@@ -32,11 +32,7 @@ end
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
         σs = rand(Truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
-        for i in νs
-            println(i[1])
-        end
-        println("Sigma's", σs)
-        Ks = [rand() for i in 1:n] # near price vector
+        Ks = [rand() for i in 1:n] # supposed to be near price vector
         # Ks = [rand(Normal(i, j) for i in νs[1], j in σs)] # near price vector
         println("Test")
         τs = [((1 / 52) - (i - 1) * (1 / 154)) for i in 1:n] # max is 1/52 (week at most). Start max, reduce by step size
