@@ -1,4 +1,4 @@
-export CFMM, ProductTwoCoin, GeometricMeanTwoCoin
+export CFMM, ProductTwoCoin, GeometricMeanTwoCoin, Primitive_RMM_01
 export find_arb!
 using Distributions
 
@@ -212,6 +212,9 @@ where \Phi is the normal CDF
 #cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
 struct Primitive_RMM_01{T} <: CFMM{T}
     @add_two_coin_fields
+    σ::T
+    τ::T
+    K::T
     function Primitive_RMM_01(R, γ, idx, σ, τ, K)
         γ_T, idx_uint, T = two_coin_check_cast(R, γ, idx)
         return new{T}(
