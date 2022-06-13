@@ -32,9 +32,13 @@ end
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
         σs = rand(Truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
-        # println(rand(Normal(i, j), n) for i in νs, j in σs)
-        Ks = [@MVector rand(Normal(i, j)) for i in νs, j in σs] # near price vector
-        println(Ks')
+        for i in νs
+            println(i[1])
+        end
+        println("Sigma's", σs)
+        Ks = [rand() for i in 1:n] # near price vector
+        # Ks = [rand(Normal(i, j) for i in νs[1], j in σs)] # near price vector
+        println("Test")
         τs = [((1 / 52) - (i - 1) * (1 / 154)) for i in 1:n] # max is 1/52 (week at most). Start max, reduce by step size
         cache = init_opt_cache(Rs[1])
 
@@ -76,7 +80,7 @@ end
                 @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
             end
         end
-        @testset "Primitive_RMM_01" begin
+        @testset "Primitive RMM_01" begin
             for R in Rs, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
                 cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
                 find_arb!(Δ, Λ, cfmm, ν)

@@ -210,6 +210,7 @@ and fee `γ`. Specifically, the invariant is
 ```
 where \Phi is the normal CDF
 """
+#cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
 struct Primitive_RMM_01{T} <: CFMM{T}
     @add_two_coin_fields
     function Primitive_RMM_01(R, γ, idx, σ, τ, K)
@@ -225,33 +226,35 @@ struct Primitive_RMM_01{T} <: CFMM{T}
     end
 end
 
-function ϕ(cfmm::Primitive; R=nothing)
+function ϕ(cfmm::Primitive_RMM_01; R=nothing)
+    n = Normal(0, 1)
     R = isnothing(R) ? cfmm.R : R
-    return R[2] - cfmm.K * CDF(quantile(1 - R[1], 1) - cfmm.σ * sqrt(cfmm.T))
+    return R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
 end
 
 # Derivative with respect to risky is interesting
 # Derivative with respect to stable is just 1
-function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
+function ∇ϕ!(R⁺, cfmm::Primitive_RMM_01; R=nothing)
+    n = Normal(0, 1)
     R = isnothing(R) ? cfmm.R : R
-    R⁺[1] = cfmm.K * exp(quantile(1 - R[1], 1) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
+    R⁺[1] = cfmm.K * exp(quantile(n, 1 - R[1]) * cfmm.σ * sqrt(cfmm.τ) * exp(-0.5 * cfmm.σ^2 * cfmm.τ))
     R⁺[2] = 1
     # Gradient is a vector of derivatives, since we have two coins our vector has two dimensions
     return nothing
 end
 
-# Double check This
 # notes are here https://www.overleaf.com/read/gtvfvwnbfmmy
+n = Normal(0, 1)
 @inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - CDF(log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
-@inline prod_arb_λ(m, r, K, k, γ, σ, τ) = max(K * quantile((log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ), 1) + k - r, 0) / γ
+@inline prod_arb_λ(m, r, K, inv, γ, σ, τ) = max(K * quantile(n, (log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + inv - r, 0) / γ
 
 
-function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive{T}, v::VT) where {T,VT<:AbstractVector{T}}
-    K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.T
-    k = R[2] - cfmm.K * CDF(quantile(1 - R[1], 1) - cfmm.σ * sqrt(cfmm.Τ))
+function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive_RMM_01{T}, v::VT) where {T,VT<:AbstractVector{T}}
+    K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.τ
+    invarient = R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
     Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
     Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
-    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, k, γ, σ, τ)
-    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], K, k, γ, σ, τ)
+    Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, invarient, γ, σ, τ)
+    Λ[2] = prod_arb_λ(v[2] / v[1], R[2], K, invarient, γ, σ, τ)
     return nothing
 end
