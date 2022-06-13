@@ -1,6 +1,8 @@
 export CFMM, ProductTwoCoin, GeometricMeanTwoCoin
 export find_arb!
 using Distributions
+using Test
+
 abstract type CFMM{T} end
 
 @def add_generic_fields begin
@@ -225,14 +227,14 @@ end
 
 function ϕ(cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    return R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.T))
+    return R[2] - cfmm.K * CDF(quantile(1 - R[1], 1) - cfmm.σ * sqrt(cfmm.T))
 end
 
 # Derivative with respect to risky is interesting
 # Derivative with respect to stable is just 1
 function ∇ϕ!(R⁺, cfmm::Primitive; R=nothing)
     R = isnothing(R) ? cfmm.R : R
-    R⁺[1] = cfmm.K * exp(quantile(1 - R[1]) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
+    R⁺[1] = cfmm.K * exp(quantile(1 - R[1], 1) * cfmm.σ * sqrt(cfmm.Τ) * exp(-0.5 * cfmm.σ^2 * cfmm.T))
     R⁺[2] = 1
     # Gradient is a vector of derivatives, since we have two coins our vector has two dimensions
     return nothing
@@ -241,12 +243,12 @@ end
 # Double check This
 # notes are here https://www.overleaf.com/read/gtvfvwnbfmmy
 @inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - CDF(log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
-@inline prod_arb_λ(m, r, K, k, γ, σ, τ) = max(K * quantile((log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + k - r, 0) / γ
+@inline prod_arb_λ(m, r, K, k, γ, σ, τ) = max(K * quantile((log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ), 1) + k - r, 0) / γ
 
 
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive{T}, v::VT) where {T,VT<:AbstractVector{T}}
     K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.T
-    k = R[2] - cfmm.K * CDF(quantile(1 - R[1]) - cfmm.σ * sqrt(cfmm.Τ))
+    k = R[2] - cfmm.K * CDF(quantile(1 - R[1], 1) - cfmm.σ * sqrt(cfmm.Τ))
     Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
     Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
     Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, k, γ, σ, τ)

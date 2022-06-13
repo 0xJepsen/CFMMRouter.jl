@@ -30,8 +30,13 @@ end
         γs = [rand() for i in 1:n]
         Rs = [rand(2) * 10 for i in 1:n]
         νs = [@MVector rand(2) for i in 1:n]
-        σs = [rand(Truncated(Normal(0.95, 0.35), 0.5, 1.4)) for i in 1:n] # Standard deviation of price. Range gausian between [.6,1.3]
-        Ks = [rand(Truncated(Normal(i, j), 0, Inf)) for i in νs, j in σs] # near price vector
+        d = Normal(0.95, 0.35)
+        println(rand(Truncated(d, 0.1, 1.4), n))
+        σs = rand(Truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
+        println(σs)
+        println(rand(Normal(i, j), n) for i in νs, j in σs)
+        Ks = [rand(Normal(i, j)) for i in νs, j in σs] # near price vector
+        println(Ks)
         τs = [((1 / 52) - (i - 1) * (1 / 154)) for i in 1:n] # max is 1/52 (week at most). Start max, reduce by step size
         cache = init_opt_cache(Rs[1])
 
