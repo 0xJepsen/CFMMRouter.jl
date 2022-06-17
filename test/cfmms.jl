@@ -31,7 +31,7 @@ end
         Rs = [rand(2) * 10 for i in 1:n]
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
-        σs = rand(Truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
+        σs = rand(truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
         Ks = [rand() for i in 1:n] # supposed to be near price vector
         # Ks = [rand(Normal(i, j) for i in νs[1], j in σs)] # near price vector
         println("Test")

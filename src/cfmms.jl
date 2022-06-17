@@ -209,7 +209,6 @@ and fee `γ`. Specifically, the invariant is
 ```
 where \Phi is the normal CDF
 """
-#cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
 struct Primitive_RMM_01{T} <: CFMM{T}
     @add_two_coin_fields
     σ::T
@@ -253,6 +252,9 @@ n = Normal(0, 1)
 
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive_RMM_01{T}, v::VT) where {T,VT<:AbstractVector{T}}
     K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.τ
+    println(1 - R[1])
+    println(quantile(n, 1 - R[1]))
+    println("made it")
     invarient = R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
     Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
     Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
