@@ -207,7 +207,7 @@ and fee `γ`. Specifically, the invariant is
 ```math
 \varphi(R_x,R_y) = R_y-K\Phi(\Phi^{-1}(1-R_x)-\sigma\sqrt{\tau}
 ```
-where \Phi is the normal CDF
+where \Phi is the normal cdf
 """
 struct Primitive_RMM_01{T} <: CFMM{T}
     @add_two_coin_fields
@@ -230,7 +230,7 @@ end
 function ϕ(cfmm::Primitive_RMM_01; R=nothing)
     n = Normal(0, 1)
     R = isnothing(R) ? cfmm.R : R
-    return R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
+    return R[2] - cfmm.K * cdf(n, quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
 end
 
 # Derivative with respect to risky is interesting
@@ -246,7 +246,7 @@ end
 
 # notes are here https://www.overleaf.com/read/gtvfvwnbfmmy
 n = Normal(0, 1)
-@inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - CDF(log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
+@inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - cdf(n, log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
 @inline prod_arb_λ(m, r, K, inv, γ, σ, τ) = max(K * quantile(n, (log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + inv - r, 0) / γ
 
 
@@ -256,10 +256,18 @@ function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive_RMM_01{T}, v::VT) where {T,VT
     println("made it")
     println(quantile(n, 1 - R[1]))
     println("made it")
-    invarient = R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
+    invarient = R[2] - cfmm.K * cdf(n, quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
+    # println(cdf(n, log((v[2] / v[1]) / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)))
+    # println("trying my best")
     Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
+    println("made it")
     Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
+    println("made it")
+    println((log((v[1] / v[2]) / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ))
+    println(quantile(n, (log((v[1] / v[2]) / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)))
     Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, invarient, γ, σ, τ)
+    println("made it")
     Λ[2] = prod_arb_λ(v[2] / v[1], R[2], K, invarient, γ, σ, τ)
+    println("made it")
     return nothing
 end

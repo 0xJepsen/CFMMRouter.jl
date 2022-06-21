@@ -29,9 +29,7 @@ end
         Random.seed!(1234)
         γs = [rand() for i in 1:n]
         Rs = [rand(2) * 10 for i in 1:n]
-        R_primitivex = [rand(1) for i in 1:n]
-        R_primitivey = [rand(1) * 10 for i in 1:n]
-        R_primitive = zip(R_primitivex, R_primitivey)
+        R_primitive = [rand(2) for i in 1:n]
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
         σs = rand(truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
