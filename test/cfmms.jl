@@ -28,8 +28,8 @@ end
         n = 3
         Random.seed!(1234)
         γs = [rand() for i in 1:n]
-        Rs = [rand(2) * 10 for i in 1:n]
-        R_primitive = [rand(2) for i in 1:n]
+        Rs = [rand(2) for i in 1:n]
+        # R_primitive = [rand(2) for i in 1:n]
         # The initial values for a new pool need to be less than 1 for risky, to price assets
         # Ideally just the first indicy (risky asset) fullfills this requirment, but i couldn't figure out a good way to do that
         νs = [@MVector rand(2) for i in 1:n]
@@ -81,11 +81,12 @@ end
         end
         @testset "Primitive RMM_01" begin
             println("Entered the Primitive Test")
-            for R in R_primitive, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
+            for R in Rs, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
                 println("Entered the Primitive Test for loop")
                 cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
                 println("defined Primitive")
                 find_arb!(Δ, Λ, cfmm, ν)
+                println("Made it past find arb")
                 @test optimality_conditions_met(ν, Δ, Λ, cfmm; cache=cache)
             end
         end
