@@ -247,27 +247,21 @@ end
 # notes are here https://www.overleaf.com/read/gtvfvwnbfmmy
 n = Normal(0, 1)
 @inline prod_arb_δ(m, r, K, γ, σ, τ) = max(1 - r - cdf(n, log(m / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)), 0) / γ
+# Currently this second directional arb fails because the quantiles second arg is > 1, needs ∈ [0,1] 
 @inline prod_arb_λ(m, r, K, inv, γ, σ, τ) = max(K * quantile(n, (log(m / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)) + inv - r, 0) / γ
 
 
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive_RMM_01{T}, v::VT) where {T,VT<:AbstractVector{T}}
     K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.τ
     println(1 - R[1])
-    println("made it")
     println(quantile(n, 1 - R[1]))
-    println("made it")
     invarient = R[2] - cfmm.K * cdf(n, quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
-    # println(cdf(n, log((v[2] / v[1]) / (γ * K)) / (σ * sqrt(τ)) + (1 / 2) * σ * sqrt(τ)))
-    # println("trying my best")
     Δ[1] = prod_arb_δ(v[2] / v[1], R[1], K, γ, σ, τ)
-    println("made it")
     Δ[2] = prod_arb_δ(v[1] / v[2], R[2], K, γ, σ, τ)
-    println("made it")
+    println("error here")
     println((log((v[1] / v[2]) / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ))
     println(quantile(n, (log((v[1] / v[2]) / K) / (σ * sqrt(τ))) - (1 / 2) * σ * sqrt(τ)))
     Λ[1] = prod_arb_λ(v[1] / v[2], R[1], K, invarient, γ, σ, τ)
-    println("made it")
     Λ[2] = prod_arb_λ(v[2] / v[1], R[2], K, invarient, γ, σ, τ)
-    println("made it")
     return nothing
 end

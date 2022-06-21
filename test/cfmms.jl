@@ -30,6 +30,8 @@ end
         γs = [rand() for i in 1:n]
         Rs = [rand(2) * 10 for i in 1:n]
         R_primitive = [rand(2) for i in 1:n]
+        # The initial values for a new pool need to be less than 1 for risky, to price assets
+        # Ideally just the first indicy (risky asset) fullfills this requirment, but i couldn't figure out a good way to do that
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
         σs = rand(truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
