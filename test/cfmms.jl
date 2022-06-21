@@ -29,6 +29,9 @@ end
         Random.seed!(1234)
         γs = [rand() for i in 1:n]
         Rs = [rand(2) * 10 for i in 1:n]
+        R_primitivex = [rand(1) for i in 1:n]
+        R_primitivey = [rand(1) * 10 for i in 1:n]
+        R_primitive = zip(R_primitivex, R_primitivey)
         νs = [@MVector rand(2) for i in 1:n]
         d = Normal(0.95, 0.35)
         σs = rand(truncated(d, 0.1, 1.4), n) # Standard deviation of price. Range gausian between [.6,1.3]
@@ -78,7 +81,7 @@ end
         end
         @testset "Primitive RMM_01" begin
             println("Entered the Primitive Test")
-            for R in Rs, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
+            for R in R_primitive, γ in γs, ν in νs, σ in σs, K in Ks, τ in τs
                 println("Entered the Primitive Test for loop")
                 cfmm = Primitive_RMM_01(R, γ, [1, 2], σ, τ, K)
                 println("defined Primitive")

@@ -253,6 +253,7 @@ n = Normal(0, 1)
 function find_arb!(Δ::VT, Λ::VT, cfmm::Primitive_RMM_01{T}, v::VT) where {T,VT<:AbstractVector{T}}
     K, R, γ, σ, τ = cfmm.K, cfmm.R, cfmm.γ, cfmm.σ, cfmm.τ
     println(1 - R[1])
+    println("made it")
     println(quantile(n, 1 - R[1]))
     println("made it")
     invarient = R[2] - cfmm.K * CDF(quantile(n, 1 - R[1]) - cfmm.σ * sqrt(cfmm.τ))
